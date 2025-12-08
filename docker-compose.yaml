@@ -1,0 +1,99 @@
+version: '3.8'
+
+# --- Network Definition ---
+networks:
+  vault-net:
+    # Use a bridge network for internal communication
+    driver: bridge
+
+# --- Service Definitions ---
+services:
+  # 1. Primary Cluster Node
+  cluster-pri:
+    # Use the Vault Enterprise image
+    image: hashicorp/vault-enterprise:latest
+    container_name: vault-enterprise-cluster-pri
+    hostname: cluster-pri
+    # Connect to the custom network
+    networks:
+      - vault-net
+    # Expose the API port externally (only the primary node needs this)
+    ports:
+      - "8200:8200"
+      - "8201:8201"
+    # Essential environment variables
+    environment:
+      # VAULT_ADDR and VAULT_API_ADDR should reflect how other nodes or the host access the service.
+      # Using the container's hostname for inter-container comms.
+      VAULT_ADDR: "http://cluster-pri:8200"
+      VAULT_CLUSTER_ADDR: "http://cluster-pri:8201"
+      VAULT_API_ADDR: "http://cluster-pri:8200"
+      VAULT_RAFT_NODE_ID: "cluster-pri"
+      # IMPORTANT: Replace $VAULT_LICENSE with your actual license or pass it via the environment.
+      VAULT_LICENSE: "${VAULT_LICENSE}"
+    # Map local config/data directories to container paths
+    volumes:
+      - ./cluster-pri/config/vault.hcl:/vault/config/vault-server.hcl:z
+      - ./cluster-pri/data:/vault/file:z
+    # Required for disable_mlock=false in config (though you're using true, it's good practice)
+    cap_add:
+      - IPC_LOCK
+    # Command to run Vault server
+    command: vault server -config=/vault/config/vault-server.hcl
+    # Ensures the container restarts if it crashes
+    restart: unless-stopped
+    # Detach and remove are handled by docker-compose commands (up/down)
+
+  # 2. Performance Standby Cluster Node
+  cluster-perf:
+    image: hashicorp/vault-enterprise:latest
+    container_name: vault-enterprise-cluster-perf
+    hostname: cluster-perf
+    networks:
+      - vault-net
+    ports:
+      - "8210:8210"
+      - "8211:8211"
+    # Performance standby doesn't usually expose its API port externally
+    environment:
+      VAULT_ADDR: "http://cluster-perf:8210"
+      VAULT_CLUSTER_ADDR: "http://cluster-perf:8211"
+      VAULT_API_ADDR: "http://cluster-perf:8210"
+      VAULT_RAFT_NODE_ID: "cluster-perf"
+      VAULT_LICENSE: "${VAULT_LICENSE}"
+    volumes:
+      - ./cluster-perf/config/vault.hcl:/vault/config/vault-server.hcl:z
+      - ./cluster-perf/data:/vault/file:z
+    cap_add:
+      - IPC_LOCK
+    command: vault server -config=/vault/config/vault-server.hcl
+    restart: unless-stopped
+    # Wait for the primary to be up before starting (optional but helpful)
+    depends_on:
+      - cluster-pri
+
+  # 3. DR Standby Cluster Node
+  cluster-dr:
+    image: hashicorp/vault-enterprise:latest
+    container_name: vault-enterprise-cluster-dr
+    hostname: cluster-dr
+    networks:
+      - vault-net
+    ports:
+      - "8220:8220"
+      - "8221:8221"    # DR standby doesn't usually expose its API port externally
+    environment:
+      VAULT_ADDR: "http://cluster-dr:8220"
+      VAULT_CLUSTER_ADDR: "http://cluster-dr:8221"
+      VAULT_API_ADDR: "http://cluster-dr:8220"
+      VAULT_RAFT_NODE_ID: "cluster-dr"
+      VAULT_LICENSE: "${VAULT_LICENSE}"
+    volumes:
+      - ./cluster-dr/config/vault.hcl:/vault/config/vault-server.hcl:z
+      - ./cluster-dr/data:/vault/file:z
+    cap_add:
+      - IPC_LOCK
+    command: vault server -config=/vault/config/vault-server.hcl
+    restart: unless-stopped
+    depends_on:
+      - cluster-pri
