@@ -1,0 +1,5 @@
+.init
+.env
+cluster-pri/data/*
+cluster-perf/data/*
+cluster-dr/data/*
