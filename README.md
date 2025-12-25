@@ -5,7 +5,7 @@
 % cd vault-clusters/
 
 # start
-% export VAULT_LICENSE="{LICENSE_STRING}"
+% export VAULT_LICENSE="${VAULT_LICENSE_STRING}"
 % docker compose up --build --detach
 
 # cleanup
