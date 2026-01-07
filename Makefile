@@ -1,6 +1,5 @@
 # Makefile for Docker Compose operations
 
-
 DC=docker compose
 
 # Default target: run docker compose up --build --detach
