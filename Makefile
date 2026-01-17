@@ -60,6 +60,11 @@ down:
 	sudo rm -rf cluster-pri/data/*
 	sudo rm -rf cluster-perf/data/*
 	sudo rm -rf cluster-dr/data/*
+	rm -f $(PERF)/.perf_token
+	rm -f $(DR)/.dr_token
+	rm -f $(PRI)/.init
+	rm -f $(PERF)/.init
+	rm -f $(DR)/.init
 
 help:
 	@echo "Usage: make (default)"
@@ -68,3 +73,4 @@ help:
 	@echo "make unseal: Unseal all Vault clusters"
 	@echo "make establish-pr: Setup Performance Replication"
 	@echo "make establish-dr: Setup DR Replication"
+	@echo "make down: Delete clusters with volumes and data"
