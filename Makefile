@@ -8,8 +8,9 @@ PERF_CONT=vault-enterprise-cluster-perf
 DR_CONT=vault-enterprise-cluster-dr
 
 # Token extraction helpers
-EXTRACT_TOKEN = awk '/Initial Root Token/ {print $$NF}' | sed 's/\x1b\[[0-9;]*m//g' | tr -d '\r\n'
-EXTRACT_UNSEAL_KEY = awk '/Unseal Key 1/ {print $$NF}' | sed 's/\x1b\[[0-9;]*m//g' | tr -d '\r\n'
+STRIP_ANSI = sed 's/\x1b\[[0-9;]*m//g' | tr -d '\r\n'
+EXTRACT_TOKEN = awk '/Initial Root Token/ {print $$NF}' | $(STRIP_ANSI)
+EXTRACT_UNSEAL_KEY = awk '/Unseal Key 1/ {print $$NF}' | $(STRIP_ANSI)
 GET_PRI_TOKEN = $$(cat $(PRI)/.init | $(EXTRACT_TOKEN))
 GET_PERF_TOKEN = $$(cat $(PERF)/.init | $(EXTRACT_TOKEN))
 GET_DR_TOKEN = $$(cat $(DR)/.init | $(EXTRACT_TOKEN))
