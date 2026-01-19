@@ -14,17 +14,17 @@ define extract_value
 $$(awk -F': ' '/^$(1):/ {print $$2}' $(2) | sed 's/\x1b\[[0-9;]*m//g' | tr -d '\r\n')
 endef
 
-.DEFAULT_GOAL := up
+.DEFAULT_GOAL := help
 
-up:
+up: ## Spin-up Vault clusters
 	$(DC) up --build --detach
 
-init:
+init: ## Initialize Vault cluster
 	docker exec -i $(PRI_CONT) vault operator init -address=http://127.0.0.1:8200 -key-shares=1 -key-threshold=1 > $(PRI)/.init
 	docker exec -i $(PERF_CONT) vault operator init -address=http://127.0.0.1:8210 -key-shares=1 -key-threshold=1 > $(PERF)/.init
 	docker exec -i $(DR_CONT) vault operator init -address=http://127.0.0.1:8220 -key-shares=1 -key-threshold=1 > $(DR)/.init
 
-unseal:
+unseal: ## Unseal Vault cluster
 	@for key in $(shell awk '/Unseal Key/ {print $$NF}' $(PRI)/.init | sed 's/\x1b\[[0-9;]*m//g'); do \
 		docker exec -it $(PRI_CONT) vault operator unseal -address=http://127.0.0.1:8200 $$key; \
 	done
@@ -38,7 +38,7 @@ unseal:
 
 # Establish performance replication between the primary and performance clusters.
 # Prerequisites: run 'make init' and 'make unseal' so all clusters are initialized and unsealed.
-establish-pr:
+establish-pr: ## Establish Vault PR Replication
 	@PRI_TOKEN=$(call extract_value,Initial Root Token,$(PRI)/.init); \
 	PERF_TOKEN=$(call extract_value,Initial Root Token,$(PERF)/.init); \
 	VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=$$PRI_TOKEN vault write -f sys/replication/performance/primary/enable; \
@@ -48,14 +48,14 @@ establish-pr:
 
 # Establish disaster recovery (DR) replication between the primary and DR clusters.
 # Prerequisites: run 'make init' and 'make unseal' so all clusters are initialized and unsealed.
-establish-dr:
+establish-dr: ## Establish Vault DR Replication
 	@PRI_TOKEN=$(call extract_value,Initial Root Token,$(PRI)/.init); \
 	DR_TOKEN=$(call extract_value,Initial Root Token,$(DR)/.init); \
 	VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=$$PRI_TOKEN vault write -f sys/replication/dr/primary/enable primary_cluster_addr=http://vault-enterprise-cluster-pri:8201; \
 	VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=$$PRI_TOKEN vault write sys/replication/dr/primary/secondary-token id=dr-secondary -format=json | jq -r '.wrap_info.token' > $(DR)/.dr_token; \
 	VAULT_ADDR=http://127.0.0.1:8220 VAULT_TOKEN=$$DR_TOKEN vault write sys/replication/dr/secondary/enable token=$$(cat $(DR)/.dr_token)
 
-down:
+down: ## Clean up environment
 	$(DC) down --volumes
 	sudo rm -rf cluster-pri/data/*
 	sudo rm -rf cluster-perf/data/*
@@ -66,11 +66,8 @@ down:
 	rm -f $(PERF)/.init
 	rm -f $(DR)/.init
 
-help:
-	@echo "Usage: make (default)"
-	@echo "Runs: 'docker compose up --build --detach'"
-	@echo "make init: Initialize all Vault clusters"
-	@echo "make unseal: Unseal all Vault clusters"
-	@echo "make establish-pr: Setup Performance Replication"
-	@echo "make establish-dr: Setup DR Replication"
-	@echo "make down: Delete clusters with volumes and data"
+help: ## Print this help
+	@echo 'Usage: make [target]'
+	@echo ''
+	@echo 'Targets:'
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)

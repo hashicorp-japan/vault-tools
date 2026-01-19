@@ -4,13 +4,17 @@ This repo is intended for lab use to test Vault DR and PR replications.
 ## Use Makefile to set up Vault Clusters
 Please see help
 ```
-$ make help
-"Usage: make (default)"
-"Runs: 'docker compose up --build --detach'"
-"make init: Initialize all Vault clusters"
-"make unseal: Unseal all Vault clusters"
-"make establish-pr: Setup Performance Replication"
-"make establish-dr: Setup DR Replication"
+$ make
+Usage: make [target]
+
+Targets:
+up                   Spin-up Vault clusters
+init                 Initialize Vault cluster
+unseal               Unseal Vault cluster
+establish-pr         Establish Vault PR Replication
+establish-dr         Establish Vault DR Replication
+down                 Clean up environment
+help                 Print this help
 ```
 
 # Manual procedure
