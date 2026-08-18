@@ -13,3 +13,9 @@ storage "raft" {
   path = "/vault/file"
   node_id = "vault_1"
 }
+
+log_level = "trace"
+
+sentinel {
+  additional_enabled_modules = ["http"]
+}

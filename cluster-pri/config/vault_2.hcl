@@ -16,3 +16,7 @@ storage "raft" {
     leader_api_addr = "http://cluster-pri-nd-1:8200"
   }
 }
+
+sentinel {
+  additional_enabled_modules = ["http"]
+}
