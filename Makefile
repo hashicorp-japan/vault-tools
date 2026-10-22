@@ -24,6 +24,7 @@ endef
 
 up: ## Spin-up Vault clusters
 	$(DC) up --build --detach
+	sudo chown -R 100:1000 cluster-*/data_*/
 
 init: ## Initialize Vault clusters
 	docker exec -i $(PRI_CONT_NODE_1) vault operator init -address=http://127.0.0.1:8200 -key-shares=1 -key-threshold=1 > $(PRI)/.init

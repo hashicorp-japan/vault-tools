@@ -41,7 +41,7 @@ export PRI_CL_ADDR="http://vault-enterprise-cluster-pri:8201"
 ```
 
 
-# Permission
+# Permission for data directories
 ```
 $ docker run --rm --entrypoint sh hashicorp/vault-enterprise:latest -c 'id vault'
 uid=100(vault) gid=1000(vault) groups=1000(vault),1000(vault)
@@ -53,8 +53,8 @@ $ docker inspect cluster-pri-nd-1 \
 /home/ubuntu/sandbox/vault-tools/cluster-pri/config/vault_1.hcl -> /vault/config/vault-server.hcl
 
 $ sudo chown -R 100:1000 \
-  cluster-pri/data_*
+  cluster-*/data_*
 
 $ sudo chmod 750 \
-  cluster-pri/data_*
+  cluster-*/data_*
 ```
